@@ -1,5 +1,5 @@
 """
-This is an relization of example 13.1 on 'Rainforcement Learning: An Introduction'
+This is an realization of example 13.1 on 'Reinforcement Learning: An Introduction'
 by Sutton and Barto(v2018), a 3 grid corridor. In state 0 and 1, action 0 leads
 to left(if in state 0 then no change happens) and action 1 leads to right, 
 while in state 2, the result of the two actions are reversed. All 3 states are 
