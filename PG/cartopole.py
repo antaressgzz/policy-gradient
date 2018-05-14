@@ -20,7 +20,7 @@ for episode in range(10000):
     observ = observ[:, np.newaxis]
     episode_reward = 0
     agent.episode_start()
-    while True:        
+    while True:
         action = agent.choose_action(observ)
         observ_, reward, done, _ = env.step(action)        
         observ_= observ_[:, np.newaxis]
@@ -31,6 +31,7 @@ for episode in range(10000):
         observ = observ_
     if episode % 100 == 0:
         print('episode:', episode, 'reward:', episode_reward)
+    # Exponential smoothing
     exp_r = episode_reward * 0.01 + rewards_trend[episode] * 0.99
     rewards_trend.append(exp_r)
     

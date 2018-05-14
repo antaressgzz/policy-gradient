@@ -44,7 +44,9 @@ class PGagent:
 
         with tf.variable_scope('critic'):
             self.state_value, critic_params, critic_trace, g_critic = self.build_net('critic', h_size, 1)
+            # Weights and biases colletion of the critic network
             critic_params = tf.get_collection('critic_params')
+            # Eligibility trace colletion
             critic_trace  = tf.get_collection('critic_trace')
             # op for initialize the eligiblity trace at start of every episode
             with tf.name_scope('init_critic_trace'):
@@ -72,11 +74,11 @@ class PGagent:
         b_initializer = tf.constant_initializer(0.01)
         n1 = name + '_params'
         n2 = name + '_trace'
-        params = [n1, tf.GraphKeys.GLOBAL_VARIABLES]
-        trace  = [n2, tf.GraphKeys.GLOBAL_VARIABLES]
+        params = [n1, tf.GraphKeys.GLOBAL_VARIABLES] # Collection for parameters of network
+        trace  = [n2, tf.GraphKeys.GLOBAL_VARIABLES] # Collection for eligiblity trace
         with tf.variable_scope('l1'):
-            w1   = tf.get_variable('w1', [h_size, self.nF], tf.float32, initializer=w_initializer ,collections=params)            
-            w1_t = tf.get_variable('w1_t', [h_size, self.nF], tf.float32, initializer=tf.zeros_initializer, collections=trace)                     
+            w1   = tf.get_variable('w1', [h_size, self.nF], tf.float32, initializer=w_initializer ,collections=params)
+            w1_t = tf.get_variable('w1_t', [h_size, self.nF], tf.float32, initializer=tf.zeros_initializer, collections=trace)   # Eligibility trace of w1                    
             b1   = tf.get_variable('b1', [h_size, 1], tf.float32, initializer=b_initializer, collections=params)            
             b1_t = tf.get_variable('b1_t', [h_size, 1], tf.float32, initializer=tf.zeros_initializer, collections=trace)
             tf.summary.histogram('w1', w1)
@@ -97,13 +99,13 @@ class PGagent:
             outputs = tf.matmul(w2, l1) + b2
             
         if name == 'actor':
-            outputs = tf.reshape(outputs, [2])
+            outputs = tf.reshape(outputs, [-1])
             softmax = tf.nn.softmax(outputs)
             log_p   = tf.log(softmax)
-            gradients = tf.gradients(log_p[self.action] , [w1, b1, w2, b2])
+            gradients = tf.gradients(log_p[self.action] , [w1, b1, w2, b2]) # Gradients of actor paramatrization
             return softmax, params, trace, gradients
         else:
-            gradients = tf.gradients(outputs[0], [w1, b1, w2, b2])
+            gradients = tf.gradients(outputs[0], [w1, b1, w2, b2]) # Gradients of critic paramatrization
             return outputs, params, trace, gradients
 
     def episode_start(self):
@@ -121,12 +123,12 @@ class PGagent:
         state_value  = self.sess.run(self.state_value, feed_dict={self.state:observ})       
         if done:
             # For terminal state
-            state_value_ = - 10
+            state_value_ = 0
         else:
-            state_value_ = self.sess.run(self.state_value, feed_dict={self.state:observ_})          
+            state_value_ = self.sess.run(self.state_value, feed_dict={self.state:observ_})      
         delta = reward + self.gamma * state_value_ - state_value
-        self.sess.run(self.updateAtrace,  feed_dict={self.state:observ, self.action:action})
-        self.sess.run(self.updateAparams, feed_dict={self.delta:delta})
+        self.sess.run(self.updateAtrace,  feed_dict={self.state:observ, self.action:action}) # Update trace
+        self.sess.run(self.updateAparams, feed_dict={self.delta:delta}) # Update network parameters
         self.sess.run(self.updateCtrace,  feed_dict={self.state:observ})
         self.sess.run(self.updateCparams, feed_dict={self.delta:delta})
         self.I *= self.gamma
